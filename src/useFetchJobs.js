@@ -8,7 +8,7 @@ const ACTIONS = {
   UPDATE_HAS_NEXT_PAGE: 'update-has-next-page'
 }
 
-const BASE_URL = 'https://cors-anywhere.herokuapp.com/https://jobs.github.com/positions.json'
+const BASE_URL = 'http://localhost:9100/v1/recruitment/positions'
 
 function reducer(state, action) {
   switch (action.type) {
@@ -30,10 +30,16 @@ export default function useFetchJobs(params, page) {
 
   useEffect(() => {
     const cancelToken1 = axios.CancelToken.source()
+    const cancelToken2 = axios.CancelToken.source()
+    const tokenString = sessionStorage.getItem('token');
+    const userToken = JSON.parse(tokenString);
     dispatch({ type: ACTIONS.MAKE_REQUEST })
     axios.get(BASE_URL, {
       cancelToken: cancelToken1.token,
-      params: { markdown: true, page: page, ...params }
+      params: { page: page, ...params },
+      headers: {
+        'Authorization': 'Bearer ' + userToken?.token
+      }
     }).then(res => {
       dispatch({ type: ACTIONS.GET_DATA, payload: { jobs: res.data } }) 
     }).catch(e => {
@@ -41,10 +47,13 @@ export default function useFetchJobs(params, page) {
       dispatch({ type: ACTIONS.ERROR, payload: { error: e } }) 
     })
 
-    const cancelToken2 = axios.CancelToken.source()
-    axios.get(BASE_URL, {
+
+      axios.get(BASE_URL, {
       cancelToken: cancelToken2.token,
-      params: { markdown: true, page: page + 1, ...params }
+      params: { page: page + 1, ...params },
+      headers: {
+        'Authorization': 'Bearer ' + userToken?.token
+      }
     }).then(res => {
       dispatch({ type: ACTIONS.UPDATE_HAS_NEXT_PAGE, payload: { hasNextPage: res.data.length !== 0 } }) 
     }).catch(e => {
